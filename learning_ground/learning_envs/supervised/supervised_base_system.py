@@ -1391,7 +1391,8 @@ class supervised_base_system(system_base.system_base):
                                     exact_coverage_calculation=False,
                                     coverage_num_percentile_points=100,
                                     calculate_MAP=False,
-                                    save_summary_statistic=False):
+                                    save_summary_statistic=False,
+                                    save_flow_params=False):
         """
         Inference function for marginal moments.
         """
@@ -1428,8 +1429,11 @@ class supervised_base_system(system_base.system_base):
 
             
             if(save_summary_statistic):
-                 
                  moment_dict["summary_statistic"]=data_summary
+
+            if(save_flow_params):
+                flow_params=self.pdf.mlp_predictors[0](data_summary).detach().cpu().numpy()
+                moment_dict["flow_params"]=flow_params
                  
             used_labels=None
             if("labels" in batch):

@@ -1430,7 +1430,7 @@ class CustomTransformerEncoderLayer(Module):
 
                 relative_values = self.rel_pos_value_mlp(stacked_input)
 
-                ### strategy 1
+                ### strategy 2 seems to be most efficient
                 approach=2
                 if(approach==0):
 
@@ -2131,86 +2131,163 @@ class almagate_multihead_attention(nn.Module):
 
         cfg_parser=config_parser.config_parser()
 
-        cfg_parser.add_default_kwarg("settings", "input_dim", 5, int)
-        cfg_parser.add_default_kwarg("settings", "output_dim", 50, int)
+        # "Token input dimension."
+        cfg_parser.add_default_kwarg("settings", "input_dim", 5, int) 
 
-        cfg_parser.add_default_kwarg("settings", "io_mlp_hidden_dims", "128", str)
-        cfg_parser.add_default_kwarg("settings", "io_add_skip_connection", 0, int)
+        # "Final output dimension (after aggregation+final mapping)"
+        cfg_parser.add_default_kwarg("settings", "output_dim", 50, int) 
 
-        ##TODO: this one can be removed probably .. should always be "single_self" .. i.e. default single MLP w/ skips
+        # "MLP hidden dim structure used for input/output MLPs - str with "-" separator, i.e. "64-64"
+        cfg_parser.add_default_kwarg("settings", "io_mlp_hidden_dims", "128", str) 
+
+        # add skip connection into Input/Output MLPs?
+        cfg_parser.add_default_kwarg("settings", "io_add_skip_connection", 0, int) 
+
+        ## LEGACY PARAMETER -> hould always be "single_self"
         cfg_parser.add_default_kwarg("settings", "attn_io_projection_type", "single_self", str, choices=["single_self", "single_qkv", "joint_qkv"])
 
-        ## TODO: just here for backwards compatability (not actually used)
+        ## LEGACY PARAMETER: just here for backwards compatability (not actually used)
         cfg_parser.add_default_kwarg("settings", "io_attn_projection_type", "single_self", str, choices=["single_self", "single_qkv", "joint_qkv"])
 
-        cfg_parser.add_default_kwarg("settings", "attn_do_perlayer_out_projection", 1, int, choices=[0,1])
-
+        cfg_parser.add_default_kwarg("settings", "attn_do_perlayer_out_projection", 1, int, choices=[0,1]) # outprojection after MHA application? -> default is 1
 
         cfg_parser.add_default_kwarg("settings", "skip_input_projection", 0, int) ## skipping the input projection step
 
-        
+        # -1 means computation dim is the same as input. Cmputational dim is divided by number of heads in the usual way.
         cfg_parser.add_default_kwarg("settings", "attn_computational_dim", -1, int)
-       
+        
+        # how many attention+MLP layers
         cfg_parser.add_default_kwarg("settings", "attn_num_layers", 2, int)
+
+        # num heads
         cfg_parser.add_default_kwarg("settings", "attn_num_heads_per_layer", 1, int)
+
+        # layer norm position 1
         cfg_parser.add_default_kwarg("settings", "attn_use_layer_norm_1", 1, int)
+
+        # layer norm position 2
         cfg_parser.add_default_kwarg("settings", "attn_use_layer_norm_2", 1, int)
+
+        # use extra layer norm at the end
         cfg_parser.add_default_kwarg("settings", "attn_use_extra_layer_norm", 0, int)
+
+        # pre-layer norm
         cfg_parser.add_default_kwarg("settings", "attn_layer_norm_first", 1, int)
+
+        # residual setting. 0: no residual connection, 1 (regular transformer residual), 2 (slightly different residual connectivity), 3 (Dual residual connections "ResiDual" )
         cfg_parser.add_default_kwarg("settings", "attn_use_residual_addition", 1, int)
+
+        # dtype for whole transformer encoding function
         cfg_parser.add_default_kwarg("settings", "dtype", "float32", str, choices=["float64", "float32", "float16", "bfloat16"])
         
+        # every mha layer usually projects linearly into qkv space ("single_kqv"). Joint qkv (without hidden units) is the same. Joint qkv *with*
+        # hidden units allows to nonlinearly project into qkv space.
         cfg_parser.add_default_kwarg("settings", "attn_projection_type", "joint_qkv", str, choices=["single_self", "single_qkv", "joint_qkv"])
+        
+        # mlp hidden dimensionality structure for QKV projection (default = "", "128-128" would mean 2 hidden layers of 128-d each, i.e. nonlinear qkv projection.)
         cfg_parser.add_default_kwarg("settings", "attn_inprojection_mlp_dims", "", str)
+
+        # add a skip connection to the qkv projection?
         cfg_parser.add_default_kwarg("settings", "attn_inprojection_add_skip", 0, int)
+
+        # add difference to mean for the qkv projection?
         cfg_parser.add_default_kwarg("settings", "attn_inprojection_add_mean_diff", 0, int)
 
+        # perform a final output mapping after all transformer layers?
         cfg_parser.add_default_kwarg("settings", "attn_perform_final_mapping", 1, int, choices=[0,1])
 
-
+        # which multi-head-attention implementation to use?
         cfg_parser.add_default_kwarg("settings", "attn_package", "custom_pytorch", str, choices=["custom_pytorch", "official_pytorch_w_weights", "xformer", "geometric_scatter", "nested", "flash_attn"])
 
-
+        # use dropout?
         cfg_parser.add_default_kwarg("settings", "attn_dropout", 0.1, float)
+
+        # the intermal MLP dimensionality of the "MLP part" in a single transformer layer (Multi-head-attention followed by MLP)
         cfg_parser.add_default_kwarg("settings", "attn_internal_mlp_dim", 512, int)
 
+        # use a weighted mean aggregation? Only works with aggregation mode "mean"
         cfg_parser.add_default_kwarg("settings", "attn_use_weighted_mean", 0, int)
-        cfg_parser.add_default_kwarg("settings", "attn_aggregation_mode", "mean", str, choices=["mean", "mean_n_diagonal", "mean_add_absolute", "mean_n_diagonal_add_absolute"])
-        cfg_parser.add_default_kwarg("settings", "attn_use_computational_class_token", 0, int, choices=[0,1,2,3]) 
-        ## computational class token: prepend a token which in the end is read out only (no aggregation anymore)
-        ## 0 -> no such token (normal aggregation)
-        ## 1 -> token
-        ## 2 -> first layer is just bias
-        ## 3 -> cross attention (first layer is just bias)
 
+        ## aggreagtion mode? Only used if no "class token is used, which would be read out instead". 
+        ## mean -> mean
+        ## mean_n_diagonal + concat mean + diagonal variance of tokens
+        ## mean_add_absolute -> concat mean + absolute token sum
+        ## mean_n_diagonal_add_absolute -> concat mean+absolute token sum, then add diagonal variance 
+        cfg_parser.add_default_kwarg("settings", "attn_aggregation_mode", "mean", str, choices=["mean", "mean_n_diagonal", "mean_add_absolute", "mean_n_diagonal_add_absolute"])
+        
+        ## computational class token: an auxiliary token which in the end is read out only (no aggregation anymore)
+        ## 0 -> no such token (normal aggregation, e.g. "mean", defined by attn_aggregation_mode)
+        ## 1 -> prepend extra auxiliary token, everything the same
+        ## 2 -> first layer is just bias (no bias+projection learned for class token in first layer)
+        ## 3 -> cross attention (token is readout only (cross attention), and only bias in first layer)
+        ## remark: in combiatnion with "dual residual connection", cross attention token gets its own similar dual residual stream 
+        cfg_parser.add_default_kwarg("settings", "attn_use_computational_class_token", 0, int, choices=[0,1,2,3]) 
+        
+        # NOT USED (xformer specific operators)
         cfg_parser.add_default_kwarg("settings", "attn_operator", "none", str)
 
-        ####
-
-        ## general positional encoding options
+        ## Use positional encoding? 
+        # -1 -> no
+        # positive integer n -> used first *n* dimensions of token for positional encoding 
         cfg_parser.add_default_kwarg("settings", "attn_original_input_position_feature_number", -1, int)
+
+        # define a range for positional indices (CURRENTLY NOT USED/NO OP, first indices must encode positional features)
         cfg_parser.add_default_kwarg("settings", "attn_original_input_position_feature_range", "", str)
+        
+        # in each layer concatenate original token input to current token representation?
         cfg_parser.add_default_kwarg("settings", "attn_add_original_input_to_feature_input", 0, int, choices=[0,1])
         
-        ## absolute positional encoding options
+        ## absolute position encoding mode
+        # none
+        # sinusodial -> default
+        # roformer (not supported currently)
         cfg_parser.add_default_kwarg("settings", "attn_abs_position_mode", "none", str, choices=["none", "sinusoidal", "roformer"])
-        #cfg_parser.add_default_kwarg("settings", "attn_abs_position_scale", "logarithmic", str, choices=["linear", "logarithmic"])
+        
+        # which layers to apply positional encoding on?
+        # -1 -> all layers
+        # integers separated by ",", i.e. 0 (only first layer) or 0,1,2 (first three layers)
         cfg_parser.add_default_kwarg("settings", "attn_abs_position_layer_indices", "0", str)
 
-        # relative positional encoding options
+        # relative positional encoding options - NOT USED
         cfg_parser.add_default_kwarg("settings", "attn_rel_position_encoding", "feature_mlp", str, choices=["feature_mlp"])
+
+        # indices of transformer layers which apply relative positional encodings
+        # e.g. 0,2,3 would apply rel positional encoding in layer 0,2,3. Also allowed e.g.: 0i,1v,2
+        # where "i" after an index overwrites rel_position feeding type to "0", while "v" will ovrwrite input
+        # feeding type to 2. See below for definition of input feeding type
         cfg_parser.add_default_kwarg("settings", "attn_rel_position_layer_indices", "0", str) # layer indices of layers that use relative positioning (-1 (all), comma separated indices, e.g. "1,2")
-        cfg_parser.add_default_kwarg("settings", "attn_rel_position_input_feeding_type", 0, int, choices=[0,1,2]) ## how to feed input? 0 normal (prev input), 1 original passed down input, 2 both if possible 
+        
+        # How relative positional encodings work.
+        # 0: take absolute valus + differences from previous layer
+        # 1: take absolute values from previous layer, diffs from original input
+        # 2: take absolute values + difference from original input 
+        cfg_parser.add_default_kwarg("settings", "attn_rel_position_input_feeding_type", 0, int, choices=[0,1,2]) 
+        
+        # which rel position mode? 
+        # none -> no "value" relative positional encoding
+        # rel_only -> only value relative positional encoding, but no ordinary value updating
+        # both -> add both ordinary attention + value relative positional output
         cfg_parser.add_default_kwarg("settings", "attn_rel_position_mode_value", "none", str, choices=["none", "only_rel", "both"])#, "split_in_heads_2"])
+        
+        # hidden dimensionality of the relative position MLP
         cfg_parser.add_default_kwarg("settings", "attn_rel_position_hidden_dim", 64, int)#, "split_in_heads_2"])
+        
+        # use skip connection in relative positional mlp?
         cfg_parser.add_default_kwarg("settings", "attn_rel_position_use_skip_connection", 1, int)
-        cfg_parser.add_default_kwarg("settings", "attn_rel_position_as_parallel_to_normal_track", 0, int) # add relative positional encoding as a parallel track to a normal transformer block and add later
-        cfg_parser.add_default_kwarg("settings", "attn_rel_position_max_computational_dim", 100, int) # the computational dim for relative positional encoding.. only used when used as parallel track
+        
+        # add relative positional encoding as a "parallel computational track
+        # to a normal transformer block and result afterwards (essentially two parallel MHA passes)
+        cfg_parser.add_default_kwarg("settings", "attn_rel_position_as_parallel_to_normal_track", 0, int)
 
+        # the computational dim for relative positional encoding.. only used when used as "parallel" track
+        cfg_parser.add_default_kwarg("settings", "attn_rel_position_max_computational_dim", 100, int) 
 
+        # force a specific precision for the multi-head-attention (SDPA - scaled dot product attention) part
+        # -> typically used for relative positional encoding, which requires fast bfloat16
         cfg_parser.add_default_kwarg("settings", "force_sdpa_precision", "", str, choices=["", "float16", "bfloat16", "float32"])
 
-        cfg_parser.add_default_kwarg("settings", "attn_num_token_types", 1, int) # number of different token types in input
+        # how many different "token types" in input? For distinct types, use distinct embedding input mappings in the very beginning. 
+        cfg_parser.add_default_kwarg("settings", "attn_num_token_types", 1, int) 
 
         
         settings_args, settings_kwargs=cfg_parser.parse_cfg(kwargs, "settings", check_passed_params_are_configured=True)

@@ -1,8 +1,8 @@
-# learning env
+# Overview
 
-A framework to do supervised neural netwrk training, in particular neural posterior estimation with conditional normalizing flows. Utilizes pytorch, pytorch-lightning and ray.
+A framework to do supervised neural network training, in particular neural posterior estimation with conditional normalizing flows. Utilizes pytorch, pytorch-lightning, ray and [jammy-flows](https://github.com/thoglu/jammy_flows/) for normalizing flows.
 
-Includes some encoders, in particular a transformer encoding used in the paper
+Includes some data encoders, in particular a transformer encoding used in the paper
 [Neural posterior estimation of the neutrino direction in IceCube](https://arxiv.org/abs/2604.19846).
 
 Grew historically from baseline pytorch implementation, added more alternative multi-head-attention (MHA) algorithms over time. Uses modified re-implementations of some pytorch classes (like TransformerEncoder) under the hood.
@@ -11,7 +11,7 @@ Supports settings for different types of aggregation/class tokens, absolute and 
 
 # Transformer encoder
 
-Contains the tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoers/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:
+Contains a tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoers/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:
 - flash-attention ("flash_attention") -> recommended if supported on GPU
 - xformers -> recommended otherwise
 - an older pytorch variant ("custom_pytorch")

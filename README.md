@@ -11,7 +11,7 @@ Supports settings for different types of aggregation/class tokens, absolute and 
 
 # Transformer encoder
 
-Contains a tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoers/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:
+Contains a tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoders/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:
 - xformers ("xformer") -> recommended for generic cpu/gpus, utilizes memory-efficiet attention / works with float32 -> default
 - flash-attention ("flash_attn") -> useful for newer cards / requires bfloat16/float16
 - an older pytorch variant ("custom_pytorch")

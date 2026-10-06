@@ -2,8 +2,12 @@
 
 A framework to do supervised neural network training, in particular neural posterior estimation with conditional normalizing flows. Utilizes pytorch, pytorch-lightning, ray and [jammy-flows](https://github.com/thoglu/jammy_flows/) for normalizing flows.
 
+
+
 Includes some data encoders, in particular a transformer encoding used in the paper
 [Neural posterior estimation of the neutrino direction in IceCube](https://arxiv.org/abs/2604.19846).
+
+Uses xformers / flashattn / default pytorch attention for multi-head attention.
 
 Grew historically from baseline pytorch implementation, added more alternative multi-head-attention (MHA) algorithms over time. Uses modified re-implementations of some pytorch classes (like TransformerEncoder) under the hood.
 
@@ -13,6 +17,7 @@ Supports settings for different types of aggregation/class tokens, absolute and 
 
 The project has been tested and developed for torch 2.2.2 (CU121) and xformers 0.0.25.post1 (CU121). In order to run the tests, it is important to have compatible versions installed with the same CUDA (CU) dependency. Very likely it would run with newer versions also. Here is the prerequresites it has been tested with:
 
+```
 ## Install PyTorch with CUDA support for CUDA 12.x
 pip3 install torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121 --index-url https://download.pytorch.org/whl/cu121 
 
@@ -29,6 +34,7 @@ pip3 install xformers==0.0.25.post1
 
 ## jammy_flows
 pip3 install git+https://github.com/thoglu/jammy_flows.git@1.1.0
+```
 
 Then install the repo directly, or run the tests.
 

@@ -9,6 +9,29 @@ Grew historically from baseline pytorch implementation, added more alternative m
 
 Supports settings for different types of aggregation/class tokens, absolute and relative positional encodings, various residual-flow options (including [resi-dual/dual residual connections](https://arxiv.org/abs/2304.14802)).
 
+# Installation
+
+The project has been tested and developed for torch 2.2.2 (CU121) and xformers 0.0.25.post1 (CU121). In order to run the tests, it is important to have compatible versions installed with the same CUDA (CU) dependency. Very likely it would run with newer versions also. Here is the prerequresites it has been tested with:
+
+## Install PyTorch with CUDA support for CUDA 12.x
+pip3 install torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121 --index-url https://download.pytorch.org/whl/cu121 
+
+pip3 install torch_geometric==2.5.2
+pip3 install pyg_lib torch_scatter==2.1.2 torch_spline_conv -f https://data.pyg.org/whl/torch-2.2.0+cu121.html
+
+pip3 install pytorch-lightning==2.2.1
+pip3 install lightning==2.0.8
+pip3 install ray==2.6.3
+
+## flash attn + xformers for fast soft attention on GPUs
+pip3 install flash-attn==2.5.7 --no-build-isolation
+pip3 install xformers==0.0.25.post1
+
+## jammy_flows
+pip3 install git+https://github.com/thoglu/jammy_flows.git@1.1.0
+
+Then install the repo directly, or run the tests.
+
 # Transformer encoder
 
 Contains a tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoders/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:

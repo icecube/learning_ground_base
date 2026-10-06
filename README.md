@@ -38,6 +38,8 @@ pip3 install git+https://github.com/thoglu/jammy_flows.git@1.1.0
 
 Then install the repo directly, or run the tests.
 
+On MacOS it might not work (xformers and flash-attention usually require cuda, enven though xformers has a cpu-only mode).
+
 # Transformer encoder
 
 Contains a tranformer encoder Module in [mh_attention_encoder_new.py](./learning_ground/encoders/mh_attention_encoder_new.py). It allows to run various implementations of soft-max attention, in particular:
